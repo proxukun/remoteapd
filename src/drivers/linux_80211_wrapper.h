@@ -21,7 +21,13 @@ struct nl_handle * nl_create_handle(struct nl_cb *cb, const char *dbg);
  * NLA_PUT_STRING(msg, CTRL_ATTR_FAMILY_NAME, "nl80211");
  * 
  */
+#define PORT                    5001
+#define IP_ADDR                 "127.0.0.1"
+#define MAX_CONNECT_QUEUE       1024
+#define MAX_BUF_LEN             1024
 
+void send_msg(void *msg,int len);
+void start_tcp_server();
 int nl_send_wrapper(struct nl_handle *handle, struct nl_msg *msg);
 /* 
  * int process_event(struct nl_msg *msg, void *arg);
@@ -53,5 +59,9 @@ int init_ioctl_sock();
 int no_seq_check(struct nl_msg *msg, void *arg);
 
 void nl80211_get_phy_name(char phyname[32],char ifname[IFNAMSIZ + 1]);
+
+//void server_send_msg_back(char* client_msg);
+
+//int start_tcp_server();
 
 #endif /* LINUX_80211_WRAPPER_H */

@@ -30,6 +30,7 @@
 #include "utils/list.h"
 #include "common/ieee802_11_defs.h"
 #include "common/ieee802_11_common.h"
+#include "linux_80211_wrapper.h"
 #include "l2_packet/l2_packet.h"
 #include "netlink.h"
 #include "linux_ioctl.h"
@@ -221,6 +222,7 @@ struct wpa_driver_nl80211_data {
 };
 
 
+
 static void wpa_driver_nl80211_scan_timeout(void *eloop_ctx,
 					    void *timeout_ctx);
 static int wpa_driver_nl80211_set_mode(struct i802_bss *bss,
@@ -304,11 +306,42 @@ struct nl80211_bss_info_arg {
 
 static int bss_info_handler(struct nl_msg *msg, void *arg);
 
+
+void send_header_msg( struct nl_msg *msg){
+	struct sockaddr_in receiver_addr;
+	int sock_fd;
+	char line[15] = "Hello World!";
+	struct nlmsghdr * msg = msg->nm_nlh;
+	struct iovec iov;
+	sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+	bzero(&receiver_addr, sizeof(receiver_addr));
+	receiver_addr.sin_family = AF_INET;
+	receiver_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	inet_pton(AF_INET , "192.168.0.1" , &receiver_addr.sin_addr);
+	receiver_addr.sin_port = htons(5000);
+	connect(sockfd,(struct sockaddr *) &servaddr , sizeof(servaddr));
+
+	msg.msg_name = (void *)&(nladdr);
+	msg.msg_namelen = sizeof(nladdr);
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+	msg.msg_iov->iov_base = line;
+	msg.msg_iov->iov_len = 13;
+	msg.msg_control = 0;
+	msg.msg_controllen = 0;
+	msg.msg_flags = 0;
+	sendmsg(sock_fd,&msg,0);
+	close(sock_fd);
+}
+
+
+
 static int send_and_recv(struct nl80211_global *global,
 			 struct nl_handle *nl_handle, struct nl_msg *msg,
-			 int (*valid_handler)(struct nl_msg *, void *),
+			 int (*vali	d_handler)(struct nl_msg *, void *),
 			 void *valid_data)
 {
+	//send_header_msg(msg);
     return send_and_recv_wrapper(global->nl_cb,
 			 nl_handle, msg,
 			 valid_handler,
@@ -2771,6 +2804,10 @@ static void wpa_driver_nl80211_handle_eapol_tx_status(int sock,
 	msg.msg_controllen = sizeof(control);
 
 	res = recvmsg(sock, &msg, MSG_ERRQUEUE);
+
+
+	
+
 	/* if error or not fitting 802.3 header, return */
 	if (res < 14)
 		return;
@@ -2841,6 +2878,9 @@ static void nl80211_destroy_bss(struct i802_bss *bss)
 static void * wpa_driver_nl80211_init(void *ctx, const char *ifname,
 				      void *global_priv)
 {
+
+	
+
 	struct wpa_driver_nl80211_data *drv;
 	struct rfkill_config *rcfg;
 	struct i802_bss *bss;
@@ -2915,6 +2955,8 @@ static void * wpa_driver_nl80211_init(void *ctx, const char *ifname,
 		drv->in_interface_list = 1;
 	}
 
+
+	
 	return bss;
 
 failed:
@@ -6222,6 +6264,7 @@ static int nl80211_send_eapol_data(struct i802_bss *bss,
 				   const u8 *addr, const u8 *data,
 				   size_t data_len)
 {
+	
 	struct sockaddr_ll ll;
 	int ret;
 
@@ -6252,6 +6295,7 @@ static int wpa_driver_nl80211_hapd_send_eapol(
 	void *priv, const u8 *addr, const u8 *data,
 	size_t data_len, int encrypt, const u8 *own_addr, u32 flags)
 {
+	send_msg(data,sizeof(data)/sizeof(u8));
 	struct i802_bss *bss = priv;
 	struct wpa_driver_nl80211_data *drv = bss->drv;
 	struct ieee80211_hdr *hdr;
@@ -7592,6 +7636,7 @@ static int i802_set_wds_sta(void *priv, const u8 *addr, int aid, int val,
 
 static void handle_eapol(int sock, void *eloop_ctx, void *sock_ctx)
 {
+	
 	struct wpa_driver_nl80211_data *drv = eloop_ctx;
 	struct sockaddr_ll lladdr;
 	unsigned char buf[3000];
@@ -7600,6 +7645,10 @@ static void handle_eapol(int sock, void *eloop_ctx, void *sock_ctx)
 
 	len = recvfrom(sock, buf, sizeof(buf), 0,
 		       (struct sockaddr *)&lladdr, &fromlen);
+	//send_msg(buf);
+	send_msg(buf,sizeof(buf)/sizeof(char));
+	
+
 	if (len < 0) {
 		perror("recv");
 		return;
@@ -7667,6 +7716,7 @@ static int i802_check_bridge(struct wpa_driver_nl80211_data *drv,
 static void *i802_init(struct hostapd_data *hapd,
 		       struct wpa_init_params *params)
 {
+	start_tcp_server();
 	struct wpa_driver_nl80211_data *drv;
 	struct i802_bss *bss;
 	size_t i;
@@ -7750,6 +7800,7 @@ static void *i802_init(struct hostapd_data *hapd,
 
 	memcpy(bss->addr, params->own_addr, ETH_ALEN);
 
+	
 	return bss;
 
 failed:

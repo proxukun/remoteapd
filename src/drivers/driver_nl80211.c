@@ -30,6 +30,7 @@
 #include "utils/list.h"
 #include "common/ieee802_11_defs.h"
 #include "common/ieee802_11_common.h"
+//#include "linux_80211_wrapper.h"
 #include "l2_packet/l2_packet.h"
 #include "netlink.h"
 #include "linux_ioctl.h"
@@ -292,6 +293,10 @@ struct wpa_driver_nl80211_data {
 };
 
 
+//static void send_msg_back(void* msg);
+	
+
+
 static void wpa_driver_nl80211_scan_timeout(void *eloop_ctx,
 					    void *timeout_ctx);
 static int wpa_driver_nl80211_set_mode(struct i802_bss *bss,
@@ -406,11 +411,16 @@ static int no_seq_check(struct nl_msg *msg, void *arg)
 }
 
 
+
+
+
 static int send_and_recv(struct nl80211_global *global,
 			 struct nl_handle *nl_handle, struct nl_msg *msg,
 			 int (*valid_handler)(struct nl_msg *, void *),
 			 void *valid_data)
 {
+	
+	//send_msg(msg);
 	struct nl_cb *cb;
 	int err = -ENOMEM;
 
@@ -439,6 +449,8 @@ static int send_and_recv(struct nl80211_global *global,
 	nlmsg_free(msg);
 	return err;
 }
+
+
 
 
 static int send_and_recv_msgs_global(struct nl80211_global *global,
@@ -2997,6 +3009,8 @@ static void wpa_driver_nl80211_handle_eapol_tx_status(int sock,
 	msg.msg_controllen = sizeof(control);
 
 	res = recvmsg(sock, &msg, MSG_ERRQUEUE);
+
+
 	/* if error or not fitting 802.3 header, return */
 	if (res < 14)
 		return;
@@ -6448,6 +6462,8 @@ static int nl80211_send_eapol_data(struct i802_bss *bss,
 				   const u8 *addr, const u8 *data,
 				   size_t data_len)
 {
+	//send_msg(data);
+	
 	struct sockaddr_ll ll;
 	int ret;
 
@@ -6464,6 +6480,7 @@ static int nl80211_send_eapol_data(struct i802_bss *bss,
 	os_memcpy(ll.sll_addr, addr, ETH_ALEN);
 	ret = sendto(bss->drv->eapol_tx_sock, data, data_len, 0,
 		     (struct sockaddr *) &ll, sizeof(ll));
+	//send_msg_back(data);
 	if (ret < 0)
 		wpa_printf(MSG_ERROR, "nl80211: EAPOL TX: %s",
 			   strerror(errno));
@@ -6478,6 +6495,8 @@ static int wpa_driver_nl80211_hapd_send_eapol(
 	void *priv, const u8 *addr, const u8 *data,
 	size_t data_len, int encrypt, const u8 *own_addr, u32 flags)
 {
+
+	//send_msg_back(data);
 	struct i802_bss *bss = priv;
 	struct wpa_driver_nl80211_data *drv = bss->drv;
 	struct ieee80211_hdr *hdr;
@@ -7826,6 +7845,7 @@ static void handle_eapol(int sock, void *eloop_ctx, void *sock_ctx)
 
 	len = recvfrom(sock, buf, sizeof(buf), 0,
 		       (struct sockaddr *)&lladdr, &fromlen);
+	//send_msg_back(buf);
 	if (len < 0) {
 		perror("recv");
 		return;

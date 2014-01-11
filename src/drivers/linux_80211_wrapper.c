@@ -20,7 +20,7 @@
 #include <linux/filter.h>
 #include <linux/errqueue.h>
 #include "nl80211_copy.h"
-
+#include<arpa/inet.h>
 #include "common.h"
 #include "eloop.h"
 #include "utils/list.h"
@@ -29,6 +29,7 @@
 #include "l2_packet/l2_packet.h"
 #include "netlink.h"
 #include "linux_80211_wrapper.h"
+
 
 #ifdef CONFIG_LIBNL20
 /* libnl 2.0 compatibility code */
@@ -44,7 +45,13 @@
  * accounting.
  */
 static uint32_t port_bitmap[32] = { 0 };
-int x;
+int listenfd,connfd ;
+
+char buf[MAX_BUF_LEN];
+struct sockaddr_in serveradd;
+struct sockaddr_in clientaddr;
+
+
 static struct nl_handle *nl80211_handle_alloc(void *cb)
 {
 	struct nl_handle *handle;
@@ -376,3 +383,62 @@ void nl80211_get_phy_name(char phyname[32],char ifname[IFNAMSIZ + 1])
 	wpa_printf(MSG_DEBUG, "nl80211: interface %s in phy %s",
 		   ifname, phyname);
 }
+
+
+
+
+void send_msg(void* msg,int len){
+	write(connfd,msg,len);
+}
+
+
+
+void start_tcp_server(){
+
+    int tmp;
+    socklen_t clientaddr_len = sizeof(struct sockaddr);
+    serveradd.sin_family = AF_INET;
+    serveradd.sin_port = ntohs(PORT);
+    serveradd.sin_addr.s_addr = inet_addr(IP_ADDR);
+    bzero(&(serveradd.sin_zero),8);
+    listenfd = socket(PF_INET,SOCK_STREAM,0);
+  
+    tmp = bind(listenfd,(struct sockaddr *)&serveradd,sizeof(struct sockaddr));
+    if(tmp == -1)
+    {
+        fprintf(stderr,"Bind Error %s:%d\n",__FILE__,__LINE__);
+        return -1;
+    }
+    listen(listenfd,MAX_CONNECT_QUEUE);
+
+    connfd = accept(listenfd,(struct sockaddr *)&clientaddr,&clientaddr_len);
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
